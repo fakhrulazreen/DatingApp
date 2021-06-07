@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi.Models;
+using System;
 
 namespace DatingApp
 {
@@ -24,7 +26,9 @@ namespace DatingApp
         {
             services.AddDbContext<DataContext>(options =>
                 options.UseSqlServer(
-                    _config.GetConnectionString("DefaultConnection")));
+                    _config.GetConnectionString("DefaultConnection")
+                )
+            );
             //services.AddDatabaseDeveloperPageExceptionFilter();
 
             services.AddControllersWithViews();
@@ -32,6 +36,32 @@ namespace DatingApp
             services.AddSpaStaticFiles(configuration =>
             {
                 configuration.RootPath = "ClientApp/dist";
+            });
+
+            //setup cors policy
+            services.AddCors();
+
+            // Register the Swagger generator, defining 1 or more Swagger documents
+            services.AddSwaggerGen(q =>
+            {
+                q.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Version = "v1",
+                    Title = "DatingApp API",
+                    Description = "A DatingApp ASP.NET Core Web API",
+                    TermsOfService = new Uri("https://example.com/terms"),
+                    Contact = new OpenApiContact
+                    {
+                        Name = "Fakhrul Azreen",
+                        Email = string.Empty,
+                        Url = new Uri("https://twitter.com/spboyer"),
+                    },
+                    License = new OpenApiLicense
+                    {
+                        Name = "Use under LICX",
+                        Url = new Uri("https://example.com/license"),
+                    }
+                });
             });
         }
 
@@ -49,6 +79,20 @@ namespace DatingApp
                 app.UseHsts();
             }
 
+            // Enable middleware to serve generated Swagger as a JSON endpoint.
+            app.UseSwagger(q =>
+            {
+                q.SerializeAsV2 = true;
+            });
+
+            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
+            // specifying the Swagger JSON endpoint.
+            app.UseSwaggerUI(q =>
+            {
+                q.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+                //c.RoutePrefix = string.Empty; //to serve the Swagger UI at the app's root
+            });
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             if (!env.IsDevelopment())
@@ -57,6 +101,14 @@ namespace DatingApp
             }
 
             app.UseRouting();
+            app.UseAuthorization();
+
+            //setup cors
+            app.UseCors(q => 
+                q.AllowAnyHeader() //allow any header to our api
+                .AllowAnyMethod() //allow any method {POST,GET,etc}
+                .WithOrigins("http://localhost:4200") //specific origin that come from
+            );
 
             app.UseEndpoints(endpoints =>
             {
