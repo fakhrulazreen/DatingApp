@@ -1,6 +1,5 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, Inject, OnInit } from '@angular/core';
-import { error } from 'console';
 
 @Component({
   selector: 'app-root',
@@ -16,7 +15,7 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.getUsers();
+    //this.getUsers();
   }
 
   getUsers() {

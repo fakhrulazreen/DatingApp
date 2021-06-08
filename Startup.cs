@@ -1,4 +1,8 @@
 using DatingApp.Data;
+using DatingApp.Extensions;
+using DatingApp.Interfaces;
+using DatingApp.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -7,8 +11,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System;
+using System.Text;
 
 namespace DatingApp
 {
@@ -24,12 +30,8 @@ namespace DatingApp
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<DataContext>(options =>
-                options.UseSqlServer(
-                    _config.GetConnectionString("DefaultConnection")
-                )
-            );
-            //services.AddDatabaseDeveloperPageExceptionFilter();
+            services.AddApplicationServices(_config);
+            services.AddIdentityService(_config);
 
             services.AddControllersWithViews();
             // In production, the Angular files will be served from this directory
@@ -39,30 +41,7 @@ namespace DatingApp
             });
 
             //setup cors policy
-            services.AddCors();
-
-            // Register the Swagger generator, defining 1 or more Swagger documents
-            services.AddSwaggerGen(q =>
-            {
-                q.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    Version = "v1",
-                    Title = "DatingApp API",
-                    Description = "A DatingApp ASP.NET Core Web API",
-                    TermsOfService = new Uri("https://example.com/terms"),
-                    Contact = new OpenApiContact
-                    {
-                        Name = "Fakhrul Azreen",
-                        Email = string.Empty,
-                        Url = new Uri("https://twitter.com/spboyer"),
-                    },
-                    License = new OpenApiLicense
-                    {
-                        Name = "Use under LICX",
-                        Url = new Uri("https://example.com/license"),
-                    }
-                });
-            });
+            services.AddCors();            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -80,16 +59,16 @@ namespace DatingApp
             }
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
-            app.UseSwagger(q =>
+            app.UseSwagger(options =>
             {
-                q.SerializeAsV2 = true;
+                options.SerializeAsV2 = true;
             });
 
             // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
             // specifying the Swagger JSON endpoint.
-            app.UseSwaggerUI(q =>
+            app.UseSwaggerUI(options =>
             {
-                q.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
                 //c.RoutePrefix = string.Empty; //to serve the Swagger UI at the app's root
             });
 
@@ -101,11 +80,12 @@ namespace DatingApp
             }
 
             app.UseRouting();
+            app.UseAuthentication();
             app.UseAuthorization();
 
             //setup cors
-            app.UseCors(q => 
-                q.AllowAnyHeader() //allow any header to our api
+            app.UseCors(options =>
+                options.AllowAnyHeader() //allow any header to our api
                 .AllowAnyMethod() //allow any method {POST,GET,etc}
                 .WithOrigins("http://localhost:4200") //specific origin that come from
             );
